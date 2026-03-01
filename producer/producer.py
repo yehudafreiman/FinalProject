@@ -14,7 +14,6 @@ class KafkaProducerClass:
         last_modified_time = self.file_path.stat().st_mtime
         return {"metadata:", name, size_bytes, last_modified_time}
 
-
     def send_to_kafka(self):
         file_path = Path("/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
         metadata_file = self.create_metadata()
