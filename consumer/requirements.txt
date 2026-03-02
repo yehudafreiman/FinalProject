@@ -1,3 +1,5 @@
 kafka-python
 pymongo
 elasticsearch
+SpeechRecognition
+pyttsx3
