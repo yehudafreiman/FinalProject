@@ -2,6 +2,9 @@ import uuid
 from kafka import KafkaConsumer
 from json import loads
 from connection import collection, es
+from logger import Logger
+
+logger = Logger.get_logger()
 
 class Consumer:
     def __init__(self):
@@ -15,12 +18,14 @@ class Consumer:
 
     def listen_to_kafka(self):
         for message in self.consumer:
+            logger.info("listen to kafka")
             return message.value
         return None
 
     def create_unique_id(self):
         data = Consumer.listen_to_kafka(self)
         data["unique_id"] = uuid.uuid4()
+        logger.info("create unique id")
 
     def send_metadata_to_elasticsearch(self):
         data = self.listen_to_kafka()
@@ -29,7 +34,9 @@ class Consumer:
             document={
                 'character': data
             })
+        logger.info("send metadata to elasticsearch")
 
     def send_file_to_mongodb(self):
         data = self.listen_to_kafka()
         self.mongo_connection.insert_many(data)
+        logger.info("send file to mongodb")

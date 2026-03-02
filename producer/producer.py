@@ -1,6 +1,9 @@
 from kafka import KafkaProducer
 from json import dumps
 from pathlib import Path
+from logger import Logger
+
+logger = Logger.get_logger()
 
 class KafkaProducerClass:
     def __init__(self):
@@ -12,6 +15,7 @@ class KafkaProducerClass:
         name = self.file_path.name
         size_bytes = self.file_path.stat().st_size
         last_modified_time = self.file_path.stat().st_mtime
+        logger.info("create metadata")
         return {"metadata:", name, size_bytes, last_modified_time}
 
     def send_to_kafka(self):
@@ -21,5 +25,7 @@ class KafkaProducerClass:
             data = {'file path': file_path, 'metadata': metadata_file}
             self.producer.send('test', value=data)
         self.producer.flush()
+        logger.info("send to kafka")
+
 
 
