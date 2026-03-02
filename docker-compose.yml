@@ -1,28 +1,36 @@
 version: '3.9'
 
 services:
-  broker:
-    image: apache/kafka:latest
-    hostname: broker
-    container_name: broker
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
-      KAFKA_LISTENERS: PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   mongodb:
     image: mongo:latest
@@ -30,7 +38,7 @@ services:
     ports:
       - "27017:27017"
     networks:
-      - mongodb
+      - app-network
     volumes:
       - mongodb_data:/data/db
     command: ['mongod', '--replSet', 'rs0']
@@ -44,6 +52,8 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    networks:
+      - app-network
     healthcheck:
       test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
       interval: 10s
@@ -58,25 +68,34 @@ services:
     depends_on:
       - elasticsearch
     networks:
-      - elastic
+      - app-network
 
   producer:
     image: producer:latest
     build:
       context: ./producer
       dockerfile: Dockerfile
+    depends_on:
+      - kafka
+    networks:
+      - app-network
 
   consumer:
     image: consumer:latest
     build:
       context: ./consumer
       dockerfile: Dockerfile
+    depends_on:
+      - elasticsearch
+      - mongodb
+      - kibana
+      - kafka
+    networks:
+      - app-network
 
 networks:
-  elastic:
-    driver: bridge
-  mongodb:
-    driver: bridge
+  app-network:
 
 volumes:
+  kafka_data:
   mongodb_data:

@@ -1,7 +1,7 @@
 import uuid
 from kafka import KafkaConsumer
 from json import loads
-from connection import collection, es
+from connection import fs, es
 from logger import Logger
 
 logger = Logger.get_logger()
@@ -13,7 +13,7 @@ class Consumer:
         auto_offset_reset='earliest',
         group_id='my-group',
         value_deserializer=lambda x: loads(x.decode('utf-8')))
-        self.mongo_connection = collection
+        self.mongo_connection = fs
         self.elasticsearch_connection = es
 
     def listen_to_kafka(self):
@@ -38,5 +38,5 @@ class Consumer:
 
     def send_file_to_mongodb(self):
         data = self.listen_to_kafka()
-        self.mongo_connection.insert_many(data)
+        self.mongo_connection.put(data)
         logger.info("send file to mongodb")
