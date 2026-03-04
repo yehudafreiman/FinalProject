@@ -34,6 +34,7 @@ class Consumer:
         with sr.AudioFile(data['file path']) as source:
             audio_data = self.recognizer.record(source)
         context = self.recognizer.listen(audio_data)
+        logger.info("create speach to text")
         return context
 
     def send_metadata_to_elasticsearch(self):
