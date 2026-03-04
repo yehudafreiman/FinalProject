@@ -51,3 +51,11 @@ class Consumer:
         data = self.listen_to_kafka()
         self.mongo_connection.put(data['file path'])
         logger.info("send file to mongodb")
+
+if __name__ == '__main__':
+    consumer = Consumer()
+    consumer.listen_to_kafka()
+    consumer.create_unique_id()
+    consumer.speach_to_text()
+    consumer.send_metadata_to_elasticsearch()
+    consumer.send_file_to_mongodb()

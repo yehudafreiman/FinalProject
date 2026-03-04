@@ -5,7 +5,7 @@ from logger import Logger
 
 logger = Logger.get_logger()
 
-class KafkaProducerClass:
+class Producer:
     def __init__(self):
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
         value_serializer=lambda x: dumps(x).encode('utf-8'))
@@ -26,6 +26,12 @@ class KafkaProducerClass:
             self.producer.send('test', value=data)
         self.producer.flush()
         logger.info("send to kafka")
+
+if __name__ == '__main__':
+    producer = Producer()
+    producer.create_metadata()
+    producer.send_to_kafka()
+
 
 
 
