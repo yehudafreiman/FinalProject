@@ -4,31 +4,31 @@ from connection import es
 
 logger = Logger.get_logger()
 
-class Analyst:
-    def __init__(self):
-        self.elasticsearch_connection = es
-        self.context = self.get_event_from_elasticsearch
-        self.hostile_list = self.encode_list("R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT")
-        self.less_hostile_list = self.encode_list("RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==")
+def decode_list(base64_string):
+    base64_bytes = base64_string.encode("ascii")
+    sample_string_bytes = base64.b64decode(base64_bytes)
+    sample_string = sample_string_bytes.decode("ascii")
+    result = sample_string.split(',')
+    return result
 
-    def encode_list(self, base64_string):
-        base64_bytes = base64_string.encode("ascii")
-        sample_string_bytes = base64.b64decode(base64_bytes)
-        sample_string = sample_string_bytes.decode("ascii")
-        result = sample_string.split(',')
-        return result
+class Analyst:
+    def __init__(self, context):
+        self.elasticsearch_connection = es
+        self.context = context
+        self.hostile_list = decode_list("R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT")
+        self.less_hostile_list = decode_list("RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==")
 
     def get_event_from_elasticsearch(self):
-        return self.elasticsearch_connection.get()
+        return self.elasticsearch_connection.update()
 
     def content_classification(self):
         doc = self.get_event_from_elasticsearch()
         for i in range(len(self.context)):
             if self.context[i] in self.hostile_list:
-                doc["is_bds"] = 2
+                doc["is_hostile"] = 2
                 break
             elif self.context[i] in self.less_hostile_list:
-                doc["is_bds"]  = 1
+                doc["is_hostile"]  = 1
                 break
 
     def calculate_hostility_percentage(self):
@@ -58,7 +58,7 @@ class Analyst:
             doc["bds_threat_level"] = "High"
 
 if __name__ == '__main__':
-    analyst = Analyst()
+    analyst = Analyst(Analyst.get_event_from_elasticsearch)
     analyst.content_classification()
     analyst.calculate_hostility_percentage()
     analyst.determine_criminalization_threshold()
