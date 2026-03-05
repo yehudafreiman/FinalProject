@@ -94,6 +94,19 @@ services:
     networks:
       - app-network
 
+  analyst:
+    image: analyst:latest
+    build:
+      context: ./analyst
+      dockerfile: Dockerfile
+    depends_on:
+      - elasticsearch
+      - mongodb
+      - kibana
+      - kafka
+    networks:
+      - app-network
+
 networks:
   app-network:
 

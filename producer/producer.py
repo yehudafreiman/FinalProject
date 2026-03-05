@@ -8,7 +8,7 @@ logger = Logger.get_logger()
 class Producer:
     def __init__(self):
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-        value_serializer=lambda x: dumps(x).encode('utf-8'))
+            value_serializer=lambda x: dumps(x).encode('utf-8'))
         self.file_path = Path("/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
 
     def create_metadata(self):

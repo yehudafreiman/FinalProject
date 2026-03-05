@@ -10,10 +10,10 @@ logger = Logger.get_logger()
 class Consumer:
     def __init__(self):
         self.consumer = KafkaConsumer('test',
-        bootstrap_servers='localhost:9092',
-        auto_offset_reset='earliest',
-        group_id='my-group',
-        value_deserializer=lambda x: loads(x.decode('utf-8')))
+            bootstrap_servers='localhost:9092',
+            auto_offset_reset='earliest',
+            group_id='my-group',
+            value_deserializer=lambda x: loads(x.decode('utf-8')))
         self.mongo_connection = fs
         self.elasticsearch_connection = es
         self.recognizer = sr.Recognizer()
