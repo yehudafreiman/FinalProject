@@ -1,34 +1,56 @@
-from kafka import KafkaProducer
-from json import dumps
-from pathlib import Path
+from confluent_kafka import Producer
+import json
+import os
+import time
 from logger import Logger
 
 logger = Logger.get_logger()
 
-class Producer:
+def delivery_report(err, msg):
+        if err:
+            print(f"delivery failed: {err}")
+        else:
+            print(f"delivered {msg.value().decode("utf-8")}")
+            print(f"delivered to {msg.topic()} : partition {msg.partition()} : at offset {msg.offset()}")
+
+class Publisher:
     def __init__(self):
-        self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-            value_serializer=lambda x: dumps(x).encode('utf-8'))
-        self.file_path = Path("/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
+        self.producer = Producer({"bootstrap.servers": "localhost:9092"})
+        self.folder_path = os.getenv("FOLDER_PATH", "/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
 
     def create_metadata(self):
-        name = self.file_path.name
-        size_bytes = self.file_path.stat().st_size
-        last_modified_time = self.file_path.stat().st_mtime
-        logger.info("create metadata")
-        return {"metadata:", name, size_bytes, last_modified_time}
+        all_metadata = []
+        try:
+            for f in os.scandir(self.folder_path):
+                c_ti = time.ctime(os.path.getctime(f))
+                m_ti = time.ctime(os.path.getmtime(f))
+                all_metadata.append({"path": f.path,
+                        "name": f.name,
+                        "size": f.stat().st_size,
+                        "created time": c_ti,
+                        "last modified": m_ti})
+            logger.info("create metadata successfully")
+            return all_metadata
+        except Exception as e:
+            logger.error("The error is: ", e)
 
     def send_to_kafka(self):
-        file_path = Path("/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
-        metadata_file = self.create_metadata()
-        for e in range(1000):
-            data = {'file path': file_path, 'metadata': metadata_file}
-            self.producer.send('test', value=data)
-        self.producer.flush()
-        logger.info("send to kafka")
+        try:
+            for metadata in self.create_metadata():
+                value = json.dumps(metadata).encode("utf-8")
+                self.producer.produce(
+                    topic="orders",
+                    value=value,
+                    callback=delivery_report
+                )
+                self.producer.flush()
+            logger.info("create metadata end send to kafka")
+        except Exception as e:
+            logger.error("The error is: ", e)
+
 
 if __name__ == '__main__':
-    producer = Producer()
+    producer = Publisher()
     producer.create_metadata()
     producer.send_to_kafka()
 

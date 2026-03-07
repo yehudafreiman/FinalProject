@@ -1,17 +1,19 @@
 import logging
-from connection import es
+import os
+from elasticsearch import Elasticsearch
 from datetime import datetime
 
 class Logger:
     _logger = None
     @classmethod
-    def get_logger(cls, name="your_logger_name", es_host="https://localhost:9200",
-                   index="your_index_logs_name", level=logging.DEBUG):
+    def get_logger(cls, name=os.getenv("LOGGER_NAME", "muasin"), es_host=os.getenv("ES_HOST_NAME", 'http://localhost:9200'),
+index=os.getenv("INDEX_NAME", "logging"), level=logging.DEBUG):
         if cls._logger:
             return cls._logger
         logger = logging.getLogger(name)
         logger.setLevel(level)
         if not logger.handlers:
+            es = Elasticsearch(es_host)
             class ESHandler(logging.Handler):
                 def emit(self, record):
                     try:
@@ -27,7 +29,4 @@ class Logger:
             logger.addHandler(logging.StreamHandler())
         cls._logger = logger
         return logger
-
-
-
 
