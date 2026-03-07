@@ -27,22 +27,19 @@ class Tracker:
                     continue
                 if msg.error():
                     print("Error:", msg.error())
+                    logger.error(msg.error())
                     continue
                 value = msg.value().decode("utf-8")
                 podcast = json.loads(value)
-                logger.info("listen kafka successfully")
-                return podcast
+                podcast["unique_id"] = str(uuid.uuid4())
+                print(podcast)
+            logger.info("listen kafka and create unique id successfully")
         except KeyboardInterrupt:
             print("Stopping consumer")
         except Exception as e:
             logger.error(e)
         finally:
             self.consumer.close()
-
-    def create_unique_id(self):
-        data = Tracker.listen_to_kafka(self)
-        data["unique_id"] = uuid.uuid4()
-        logger.info("create unique id")
 
     def speach_to_text(self):
         data = self.listen_to_kafka()
@@ -71,7 +68,6 @@ class Tracker:
 if __name__ == '__main__':
     consumer = Tracker()
     consumer.listen_to_kafka()
-    # consumer.create_unique_id()
     # consumer.speach_to_text()
     # consumer.send_metadata_to_elasticsearch()
     # consumer.send_file_to_mongodb()

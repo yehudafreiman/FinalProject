@@ -44,7 +44,7 @@ class Publisher:
                     callback=delivery_report
                 )
                 self.producer.flush()
-            logger.info("create metadata end send to kafka")
+            logger.info("create metadata and send to kafka")
         except Exception as e:
             logger.error("The error is: ", e)
 
