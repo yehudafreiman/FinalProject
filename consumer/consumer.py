@@ -1,31 +1,46 @@
+import json
 import uuid
-from kafka import KafkaConsumer
-from json import loads
+from confluent_kafka import Consumer
 from connection import fs, es
 from logger import Logger
 import speech_recognition as sr
 
 logger = Logger.get_logger()
 
-class Consumer:
+class Tracker:
     def __init__(self):
-        self.consumer = KafkaConsumer('test',
-            bootstrap_servers='localhost:9092',
-            auto_offset_reset='earliest',
-            group_id='my-group',
-            value_deserializer=lambda x: loads(x.decode('utf-8')))
+        self.consumer = Consumer({
+            "bootstrap.servers": "localhost:9092",
+            "group.id": "podcasts-tracker",
+            "auto.offset.reset": "earliest"
+            })
+        self.consumer.subscribe(["podcasts"])
         self.mongo_connection = fs
         self.elasticsearch_connection = es
         self.recognizer = sr.Recognizer()
 
     def listen_to_kafka(self):
-        for message in self.consumer:
-            logger.info("listen to kafka")
-            return message.value
-        return None
+        try:
+            while True:
+                msg = self.consumer.poll(1.0)
+                if msg is None:
+                    continue
+                if msg.error():
+                    print("Error:", msg.error())
+                    continue
+                value = msg.value().decode("utf-8")
+                podcast = json.loads(value)
+                logger.info("listen kafka successfully")
+                return podcast
+        except KeyboardInterrupt:
+            print("Stopping consumer")
+        except Exception as e:
+            logger.error(e)
+        finally:
+            self.consumer.close()
 
     def create_unique_id(self):
-        data = Consumer.listen_to_kafka(self)
+        data = Tracker.listen_to_kafka(self)
         data["unique_id"] = uuid.uuid4()
         logger.info("create unique id")
 
@@ -54,9 +69,9 @@ class Consumer:
         logger.info("send file to mongodb")
 
 if __name__ == '__main__':
-    consumer = Consumer()
+    consumer = Tracker()
     consumer.listen_to_kafka()
-    consumer.create_unique_id()
-    consumer.speach_to_text()
-    consumer.send_metadata_to_elasticsearch()
-    consumer.send_file_to_mongodb()
+    # consumer.create_unique_id()
+    # consumer.speach_to_text()
+    # consumer.send_metadata_to_elasticsearch()
+    # consumer.send_file_to_mongodb()

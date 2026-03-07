@@ -39,7 +39,7 @@ class Publisher:
             for metadata in self.create_metadata():
                 value = json.dumps(metadata).encode("utf-8")
                 self.producer.produce(
-                    topic="orders",
+                    topic="podcasts",
                     value=value,
                     callback=delivery_report
                 )
