@@ -87,8 +87,10 @@ services:
       context: ./producer
       dockerfile: Dockerfile
     depends_on:
-      - kafka
-      - elasticsearch
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     networks:
       - app-network
     volumes:
@@ -100,10 +102,31 @@ services:
       context: ./consumer
       dockerfile: Dockerfile
     depends_on:
-      - elasticsearch
-      - mongodb
-      - kibana
-      - kafka
+      elasticsearch:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./podcasts:/app/podcasts
+
+  speech-processor:
+    image: speech-processor:latest
+    build:
+      context: ./speech-processor
+      dockerfile: Dockerfile
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+      consumer:
+        condition: service_completed_successfully
     networks:
       - app-network
     volumes:
@@ -115,8 +138,10 @@ services:
       context: ./analyst
       dockerfile: Dockerfile
     depends_on:
-      - elasticsearch
-      - kibana
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
     networks:
       - app-network
 

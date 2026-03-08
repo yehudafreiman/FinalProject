@@ -32,48 +32,47 @@ class Tracker:
                 value = msg.value().decode("utf-8")
                 podcast = json.loads(value)
                 podcast["unique_id"] = str(uuid.uuid4())
-                logger.info("listen kafka and create unique id successfully")
+                podcast["content"] = ""
+                logger.info(f"{podcast['unique_id']}: listen kafka and create unique id successfully")
                 all_data.append(podcast)
-
-                try:
-                    r = sr.Recognizer()
-                    with sr.AudioFile(podcast['path']) as source:
-                        audio_data = r.record(source)
-                    podcast['content'] = r.recognize_google(audio_data)
-                    logger.info("create speach to text")
-                except sr.RequestError as e:
-                    logger.error(f"SR log failed: {e}")
-
-                try:
-                    es.index(
-                        index='podcasts',
-                        document={'path': podcast['path'],
-                                  'name': podcast['name'],
-                                  'size': podcast['size'],
-                                  'created time': podcast['created time'],
-                                  'last modified': podcast['last modified'],
-                                  'unique_id': podcast['unique_id'],
-                                  'content': podcast['content']
-                                  })
-                    logger.info("send metadata to elasticsearch")
-                except Exception as e:
-                    logger.error(f"ES log failed: {e}")
-
-                try:
-                    with open(podcast['path'], 'rb') as file_data:
-                        file_id = fs.put(file_data, filename=podcast['unique_id'])
-                    logger.info(f"send {file_id} to mongodb")
-                except Exception as e:
-                    logger.error(f"FS log failed: {e}")
-
-                return all_data
         except KeyboardInterrupt:
             print("Stopping consumer")
         except Exception as e:
             logger.error(f"Kafka log failed:{e}")
         finally:
             self.consumer.close()
+        return all_data
+
+    def send_metadata_elasticsearch(self, podcasts):
+        if not es.indices.exists(index='podcasts'):
+            es.indices.create(index='podcasts')
+        for podcast in podcasts:
+            try:
+                es.index(
+                    index='podcasts',
+                    id=podcast['unique_id'],
+                    document={'path': podcast['path'],
+                              'name': podcast['name'],
+                              'size': podcast['size'],
+                              'created time': podcast['created time'],
+                              'last modified': podcast['last modified'],
+                              'content': podcast['content']
+                              })
+                logger.info(f"{podcast['unique_id']}: send metadata to elasticsearch")
+            except Exception as e:
+                logger.error(f"ES log failed: {e}")
+
+    def send_file_mongodb(self, podcasts):
+        for podcast in podcasts:
+            try:
+                with open(podcast['path'], 'rb') as file_data:
+                    fs.put(file_data, filename=podcast['unique_id'])
+                logger.info(f"{podcast['unique_id']}: send to mongodb")
+            except Exception as e:
+                logger.error(f"FS log failed: {e}")
 
 if __name__ == '__main__':
     consumer = Tracker()
-    consumer.listen_to_kafka()
+    all_data = consumer.listen_to_kafka()
+    consumer.send_metadata_elasticsearch(all_data)
+    consumer.send_file_mongodb(all_data)
