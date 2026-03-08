@@ -8,10 +8,10 @@ logger = Logger.get_logger()
 
 def delivery_report(err, msg):
         if err:
-            print(f"delivery failed: {err}")
+            logger.error(f"delivery failed: {err}")
         else:
-            print(f"delivered {msg.value().decode('utf-8')}")
-            print(f"delivered to {msg.topic()} : partition {msg.partition()} : at offset {msg.offset()}")
+            logger.info(f"delivered {msg.value().decode('utf-8')}")
+            logger.info(f"delivered to {msg.topic()} : partition {msg.partition()} : at offset {msg.offset()}")
 
 class Publisher:
     def __init__(self):
@@ -52,7 +52,6 @@ class Publisher:
 
 if __name__ == '__main__':
     producer = Publisher()
-    producer.create_metadata()
     producer.send_to_kafka()
 
 
