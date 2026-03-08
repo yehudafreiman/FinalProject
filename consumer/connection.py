@@ -1,9 +1,9 @@
 import pymongo
-import gridfs
+from gridfs import GridFS
 from elasticsearch import Elasticsearch
 
-client = pymongo.MongoClient('mongodb://localhost:27017/')
-db = client['test']
-fs = gridfs.GridFS(db)
+client = pymongo.MongoClient('mongodb://mongodb:27017/')
+db = client['podcasts']
+fs = GridFS(db)
 
-es = Elasticsearch("http://localhost:9200")
+es = Elasticsearch("http://elasticsearch:9200")

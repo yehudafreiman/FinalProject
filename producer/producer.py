@@ -10,13 +10,13 @@ def delivery_report(err, msg):
         if err:
             print(f"delivery failed: {err}")
         else:
-            print(f"delivered {msg.value().decode("utf-8")}")
+            print(f"delivered {msg.value().decode('utf-8')}")
             print(f"delivered to {msg.topic()} : partition {msg.partition()} : at offset {msg.offset()}")
 
 class Publisher:
     def __init__(self):
-        self.producer = Producer({"bootstrap.servers": "localhost:9092"})
-        self.folder_path = os.getenv("FOLDER_PATH", "/Users/yehudafreiman/PycharmProjects/FinalProject/podcasts")
+        self.producer = Producer({'bootstrap.servers': 'kafka:9092'})
+        self.folder_path = os.getenv("FOLDER_PATH", '/app/podcasts')
 
     def create_metadata(self):
         all_metadata = []
@@ -32,7 +32,7 @@ class Publisher:
             logger.info("create metadata successfully")
             return all_metadata
         except Exception as e:
-            logger.error("The error is: ", e)
+            logger.error(f"The error is: {e}")
 
     def send_to_kafka(self):
         try:
@@ -46,7 +46,7 @@ class Publisher:
                 self.producer.flush()
             logger.info("create metadata and send to kafka")
         except Exception as e:
-            logger.error("The error is: ", e)
+            logger.error(f"The error is: {e}")
 
 
 if __name__ == '__main__':

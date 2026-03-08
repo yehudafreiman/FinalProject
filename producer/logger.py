@@ -6,7 +6,7 @@ from datetime import datetime
 class Logger:
     _logger = None
     @classmethod
-    def get_logger(cls, name=os.getenv("LOGGER_NAME", "muasin"), es_host=os.getenv("ES_HOST_NAME", 'http://localhost:9200'),
+    def get_logger(cls, name=os.getenv("LOGGER_NAME", "muasin"), es_host=os.getenv("ES_HOST_NAME", 'http://elasticsearch:9200'),
 index=os.getenv("INDEX_NAME", "logging"), level=logging.DEBUG):
         if cls._logger:
             return cls._logger
