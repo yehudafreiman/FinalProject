@@ -1,9 +1,12 @@
+import os
 import pymongo
 from gridfs import GridFS
 from elasticsearch import Elasticsearch
 
-client = pymongo.MongoClient('mongodb://mongodb:27017/')
+MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
+client = pymongo.MongoClient(MONGO_URI)
 db = client['podcasts']
 fs = GridFS(db)
 
-es = Elasticsearch("http://elasticsearch:9200")
+ES_HOST = os.getenv('ES_HOST', 'http://localhost:9200')
+es = Elasticsearch(ES_HOST)

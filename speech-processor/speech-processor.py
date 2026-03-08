@@ -1,3 +1,4 @@
+import os
 from logger import Logger
 from elasticsearch import Elasticsearch
 import speech_recognition as sr
@@ -6,7 +7,9 @@ logger = Logger.get_logger()
 
 class SpeechProcessor:
     def __init__(self):
-        self.es = Elasticsearch("http://elasticsearch:9200")
+        ES_HOST = os.getenv('ES_HOST', 'http://localhost:9200')
+        self.es = Elasticsearch(ES_HOST)
+        self.r = sr.Recognizer()
 
     def get_from_elasticsearch(self):
         result = self.es.search(
@@ -19,10 +22,9 @@ class SpeechProcessor:
     def speech_to_text(self, podcasts):
         for podcast in podcasts:
             try:
-                r = sr.Recognizer()
                 with sr.AudioFile(podcast['_source']['path']) as source:
-                    audio_data = r.record(source)
-                podcast['_source']['content'] = r.recognize_google(audio_data)
+                    audio_data = self.r.record(source)
+                podcast['_source']['content'] = self.r.recognize_google(audio_data)
                 logger.info(f"{podcast['_id']}: create speach to text")
             except sr.UnknownValueError:
                 podcast['_source']['content'] = ""

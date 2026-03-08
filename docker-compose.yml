@@ -95,12 +95,16 @@ services:
       - app-network
     volumes:
       - ./podcasts:/app/podcasts
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - ES_HOST=http://elasticsearch:9200
 
   consumer:
     image: consumer:latest
     build:
       context: ./consumer
       dockerfile: Dockerfile
+    restart: on-failure
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -114,6 +118,10 @@ services:
       - app-network
     volumes:
       - ./podcasts:/app/podcasts
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - ES_HOST=http://elasticsearch:9200
+      - MONGO_URI=mongodb://mongodb:27017
 
   speech-processor:
     image: speech-processor:latest
@@ -131,6 +139,8 @@ services:
       - app-network
     volumes:
       - ./podcasts:/app/podcasts
+    environment:
+      - ES_HOST=http://elasticsearch:9200
 
   analyst:
     image: analyst:latest
@@ -144,6 +154,8 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    environment:
+      - ES_HOST=http://elasticsearch:9200
 
 networks:
   app-network:

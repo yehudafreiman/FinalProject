@@ -15,7 +15,8 @@ def delivery_report(err, msg):
 
 class Publisher:
     def __init__(self):
-        self.producer = Producer({'bootstrap.servers': 'kafka:9092'})
+        KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'localhost:9092')
+        self.producer = Producer({'bootstrap.servers': KAFKA_BROKER})
         self.folder_path = os.getenv("FOLDER_PATH", '/app/podcasts')
 
     def create_metadata(self):

@@ -1,6 +1,7 @@
 import base64
+import os
+from elasticsearch import Elasticsearch
 from logger import Logger
-from connection import es
 
 logger = Logger.get_logger()
 
@@ -13,7 +14,8 @@ def decode_list(base64_string):
 
 class Analyst:
     def __init__(self, context):
-        self.elasticsearch_connection = es
+        ES_HOST = os.getenv('ES_HOST', 'http://localhost:9200')
+        self.es = Elasticsearch(ES_HOST)
         self.context = context
         self.hostile_list = decode_list("R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT")
         self.less_hostile_list = decode_list("RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==")

@@ -1,28 +1,29 @@
 import json
+import os
 import uuid
 from confluent_kafka import Consumer
 from connection import fs, es
 from logger import Logger
-import speech_recognition as sr
 
 logger = Logger.get_logger()
 
 class Tracker:
     def __init__(self):
+        KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'localhost:9092')
         self.consumer = Consumer({
-            'bootstrap.servers': 'kafka:9092',
+            'bootstrap.servers': KAFKA_BROKER,
             "group.id": "podcasts-tracker",
             "auto.offset.reset": "earliest"
             })
         self.consumer.subscribe(["podcasts"])
 
     def listen_to_kafka(self):
-        all_data = []
+        all_podcasts = []
         try:
             while True:
                 msg = self.consumer.poll(1.0)
                 if msg is None:
-                    if len(all_data) > 0:
+                    if len(all_podcasts) > 0:
                         break
                     continue
                 if msg.error():
@@ -34,14 +35,14 @@ class Tracker:
                 podcast["unique_id"] = str(uuid.uuid4())
                 podcast["content"] = ""
                 logger.info(f"{podcast['unique_id']}: listen kafka and create unique id successfully")
-                all_data.append(podcast)
+                all_podcasts.append(podcast)
         except KeyboardInterrupt:
             print("Stopping consumer")
         except Exception as e:
             logger.error(f"Kafka log failed:{e}")
         finally:
             self.consumer.close()
-        return all_data
+        return all_podcasts
 
     def send_metadata_elasticsearch(self, podcasts):
         if not es.indices.exists(index='podcasts'):
