@@ -114,6 +114,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      producer:
+        condition: service_completed_successfully
     networks:
       - app-network
     volumes:
@@ -133,6 +135,8 @@ services:
         condition: service_healthy
       kibana:
         condition: service_healthy
+      producer:
+        condition: service_completed_successfully
       consumer:
         condition: service_completed_successfully
     networks:
@@ -152,8 +156,31 @@ services:
         condition: service_healthy
       kibana:
         condition: service_healthy
+      speech-processor:
+        condition: service_completed_successfully
     networks:
       - app-network
+    environment:
+      - ES_HOST=http://elasticsearch:9200
+      - ENCODE_HOSTILE_LIST=R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT
+      - ENCODE_LESS_HOSTILE_LIST=RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==
+
+  api:
+    image: api:latest
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+      analyst:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+    volumes:
+      - ./podcasts:/app/podcasts
     environment:
       - ES_HOST=http://elasticsearch:9200
 

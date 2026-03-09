@@ -13,55 +13,88 @@ def decode_list(base64_string):
     return result
 
 class Analyst:
-    def __init__(self, context):
+    def __init__(self):
         ES_HOST = os.getenv('ES_HOST', 'http://localhost:9200')
         self.es = Elasticsearch(ES_HOST)
-        self.context = context
-        self.hostile_list = decode_list("R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT")
-        self.less_hostile_list = decode_list("RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==")
+        ENCODE_HOSTILE_LIST = os.getenv('ENCODE_HOSTILE_LIST')
+        self.hostile_list = [w.lower() for w in decode_list(ENCODE_HOSTILE_LIST)]
+        ENCODE_LESS_HOSTILE_LIST = os.getenv('ENCODE_LESS_HOSTILE_LIST')
+        self.less_hostile_list = [w.lower() for w in decode_list(ENCODE_LESS_HOSTILE_LIST)]
 
-    def get_event_from_elasticsearch(self):
-        return self.elasticsearch_connection.update()
+    def get_from_elasticsearch(self):
+        result = self.es.search(
+            index='podcasts',
+            query={'match_all': {}},
+            size=50
+        )
+        return result['hits']['hits']
 
-    def content_classification(self):
-        doc = self.get_event_from_elasticsearch()
-        for i in range(len(self.context)):
-            if self.context[i] in self.hostile_list:
-                doc["is_hostile"] = 2
-                break
-            elif self.context[i] in self.less_hostile_list:
-                doc["is_hostile"]  = 1
-                break
+    def set_danger_level(self, podcasts):
+        for podcast in podcasts:
+            words = podcast['_source']['content'].lower().split()
+            danger_level = 0
+            for word in words:
+                if word in self.hostile_list:
+                    danger_level = 2
+                    break
+                elif word in self.less_hostile_list:
+                    danger_level  = 1
+            podcast['_source']["danger_level"] = danger_level
+            logger.info(f"{podcast['_id']}: updated danger level")
 
-    def calculate_hostility_percentage(self):
-        doc = self.get_event_from_elasticsearch()
-        count = 0
-        for i in range(len(self.context)):
-            if self.context[i] in (self.hostile_list or self.less_hostile_list):
-                count += 1
-        percent = (count / len(self.context)) * 100
-        doc["bds_percent"] = percent
-        return percent
+    def calculate_hostility_percentage(self, podcasts):
+        for podcast in podcasts:
+            count = 0
+            words = podcast['_source']['content'].lower().split()
+            for word in words:
+                if word in self.hostile_list or word in self.less_hostile_list:
+                    count += 1
+            if len(words) == 0:
+                podcast['_source']['bds_percent'] = 0
+            else:
+                percent = (count / len(words)) * 100
+                podcast['_source']['bds_percent'] = percent
+            logger.info(f"{podcast['_id']}: updated bds percent")
 
-    def determine_criminalization_threshold(self):
-        doc = self.get_event_from_elasticsearch()
-        if self.calculate_hostility_percentage() > 50:
-            doc["is_bds"] = True
-        else:
-            doc["is_bds"] = False
+    def determine_criminalization_threshold(self, podcasts):
+        for podcast in podcasts:
+            if podcast['_source']['bds_percent'] > 50:
+                podcast['_source']["is_bds"] = True
+            else:
+                podcast['_source']["is_bds"] = False
+            logger.info(f"{podcast['_id']}: updated is bds")
 
-    def determine_threat_level(self):
-        doc = self.get_event_from_elasticsearch()
-        if self.calculate_hostility_percentage() <= 25:
-            doc["bds_threat_level"] = "None"
-        elif 25 < self.calculate_hostility_percentage() <= 75:
-            doc["bds_threat_level"] = "Medium"
-        else:
-            doc["bds_threat_level"] = "High"
+    def determine_threat_level(self, podcasts):
+        for podcast in podcasts:
+            if podcast['_source']['bds_percent'] <= 25:
+                podcast['_source']["bds_threat_level"] = "None"
+            elif 25 < podcast['_source']['bds_percent'] <= 75:
+                podcast['_source']["bds_threat_level"] = "Medium"
+            else:
+                podcast['_source']["bds_threat_level"] = "High"
+            logger.info(f"{podcast['_id']}: updated bds threat level")
+
+    def update_hostility_fields_elasticsearch(self, podcasts):
+        for podcast in podcasts:
+            try:
+                self.es.update(
+                    index='podcasts',
+                    id=podcast['_id'],
+                    doc={
+                        'danger_level': podcast['_source']["danger_level"],
+                        'bds_percent': podcast['_source']["bds_percent"],
+                        'is_bds': podcast['_source']["is_bds"],
+                        'bds_threat_level': podcast['_source']["bds_threat_level"]
+                    })
+                logger.info(f"{podcast['_id']}: updated content")
+            except Exception as e:
+                logger.error(f"ES update failed: {e}")
 
 if __name__ == '__main__':
-    analyst = Analyst(Analyst.get_event_from_elasticsearch)
-    analyst.content_classification()
-    analyst.calculate_hostility_percentage()
-    analyst.determine_criminalization_threshold()
-    analyst.determine_threat_level()
+    analyst = Analyst()
+    all_data = analyst.get_from_elasticsearch()
+    analyst.set_danger_level(all_data)
+    analyst.calculate_hostility_percentage(all_data)
+    analyst.determine_criminalization_threshold(all_data)
+    analyst.determine_threat_level(all_data)
+    analyst.update_hostility_fields_elasticsearch(all_data)
