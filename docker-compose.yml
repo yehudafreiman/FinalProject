@@ -59,6 +59,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 120s
 
   kibana:
     container_name: kibana
@@ -175,6 +176,8 @@ services:
       - app-network
     volumes:
       - ./podcasts:/app/podcasts
+    ports:
+      - "8000:8000"
     environment:
       - ES_HOST=http://elasticsearch:9200
     depends_on:
