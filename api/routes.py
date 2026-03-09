@@ -7,7 +7,7 @@ async def root():
     return {"message": "Fast api is running"}
 
 @router.get("/all")
-async def get_all_content():
+async def get_all_podcasts():
     queries = Queries()
-    return queries.all_content()
+    return queries.all_podcasts()
 

@@ -5,7 +5,7 @@ class Queries:
     def __init__(self):
         self.es = Elasticsearch(os.getenv('ES_HOST', 'http://localhost:9200'))
 
-    def all_content(self):
+    def all_podcasts(self):
         result = self.es.search(
             index='podcasts',
             query={'match_all': {}},

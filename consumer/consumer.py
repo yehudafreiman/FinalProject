@@ -45,8 +45,9 @@ class Tracker:
         return all_podcasts
 
     def send_metadata_elasticsearch(self, podcasts):
-        if not es.indices.exists(index='podcasts'):
-            es.indices.create(index='podcasts')
+        if es.indices.exists(index='podcasts'):
+            es.indices.delete(index='podcasts')
+        es.indices.create(index='podcasts')
         for podcast in podcasts:
             try:
                 es.index(
