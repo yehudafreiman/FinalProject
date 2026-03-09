@@ -1,9 +1,11 @@
 import base64
 import os
+import speech_recognition as sr
+from elasticsearch import Elasticsearch
 
+es = Elasticsearch('http://localhost:9200')
+print(f"Connected: {es.ping()}")
 
-# import speech_recognition as sr
-#
 # # Initialize the recognizer
 # r = sr.Recognizer()
 #
@@ -29,21 +31,21 @@ import os
 #     print("Sorry, could not understand the audio within the file.")
 # except sr.RequestError as e:
 #     print("Could not request results from Google Speech Recognition service; {0}".format(e))
-
-from dotenv import load_dotenv
-load_dotenv()
-
-def decode_list(base64_string):
-    base64_bytes = base64_string.encode("ascii")
-    sample_string_bytes = base64.b64decode(base64_bytes)
-    sample_string = sample_string_bytes.decode("ascii")
-    result = sample_string.split(',')
-    return result
-
-ENCODE_HOSTILE_LIST = os.getenv('ENCODE_HOSTILE_LIST')
-hostile_list = decode_list(ENCODE_HOSTILE_LIST)
-ENCODE_LESS_HOSTILE_LIST = os.getenv('ENCODE_LESS_HOSTILE_LIST')
-less_hostile_list = decode_list(ENCODE_LESS_HOSTILE_LIST)
-
-print(f"hostile_list: {hostile_list}\n"
-      f"less_hostile_list: {less_hostile_list}")
+#
+# from dotenv import load_dotenv
+# load_dotenv()
+#
+# def decode_list(base64_string):
+#     base64_bytes = base64_string.encode("ascii")
+#     sample_string_bytes = base64.b64decode(base64_bytes)
+#     sample_string = sample_string_bytes.decode("ascii")
+#     result = sample_string.split(',')
+#     return result
+#
+# ENCODE_HOSTILE_LIST = os.getenv('ENCODE_HOSTILE_LIST')
+# hostile_list = decode_list(ENCODE_HOSTILE_LIST)
+# ENCODE_LESS_HOSTILE_LIST = os.getenv('ENCODE_LESS_HOSTILE_LIST')
+# less_hostile_list = decode_list(ENCODE_LESS_HOSTILE_LIST)
+#
+# print(f"hostile_list: {hostile_list}\n"
+#       f"less_hostile_list: {less_hostile_list}")

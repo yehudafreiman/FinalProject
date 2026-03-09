@@ -80,6 +80,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 120s
 
   producer:
     image: producer:latest
@@ -170,19 +171,19 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      kibana:
-        condition: service_healthy
-      analyst:
-        condition: service_completed_successfully
     networks:
       - app-network
     volumes:
       - ./podcasts:/app/podcasts
     environment:
       - ES_HOST=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      analyst:
+        condition: service_completed_successfully
+      speech-processor:
+        condition: service_completed_successfully
 
 networks:
   app-network:
